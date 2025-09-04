@@ -1,0 +1,44 @@
+namespace Chickensoft.GoDotTest.Tests;
+
+using System.Threading.Tasks;
+using Godot;
+using GoDotTest;
+using Shouldly;
+
+public class TheoryMethodTest : TestClass {
+  public TheoryMethodTest(Node testScene) : base(testScene) { }
+
+  [Theory]
+  public void RespectsTimeout() {
+    var method = typeof(TestMethodTest).GetMethod(
+      nameof(MethodWithTimeout)
+    )!;
+    var testMethod = new TestMethod(method, TestMethodType.Test);
+    testMethod.TimeoutMilliseconds.ShouldBe(150);
+  }
+
+  [Theory]
+  public async Task WillNotInvokeAsyncVoidMethod() {
+    var method = typeof(TestMethodTest).GetMethod(
+      nameof(AsyncVoidMethod)
+    )!;
+    var testMethod = new TestMethod(method, TestMethodType.Test);
+    await Should.ThrowAsync<AsyncVoidException>(() => testMethod.Invoke(this));
+  }
+
+  [Theory]
+  public async Task ThrowsTimeoutExceptionWhenTestTimesOut() {
+    var method = typeof(TestMethodTest).GetMethod(
+      nameof(MethodWithTimeout)
+    )!;
+    var testMethod = new TestMethod(method, TestMethodType.Test);
+    await Should.ThrowAsync<TestTimeoutException>(
+      () => testMethod.Invoke(this, 200)
+    );
+  }
+
+  [Timeout(150)]
+  public async Task MethodWithTimeout() => await Task.Delay(300);
+
+  public async void AsyncVoidMethod() => await Task.CompletedTask;
+}
