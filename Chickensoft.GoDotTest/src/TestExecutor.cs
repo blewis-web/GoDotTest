@@ -75,7 +75,9 @@ public class TestExecutor : ITestExecutor {
   /// <param name="methodExecutor">Test method executor.</param>
   /// <param name="stopOnError">True if the executor should stop at the first
   /// exception encountered.</param>
-  /// <param name="sequential"></param>
+  /// <param name="sequential">True if the test executor should skip subsequent test methods in an
+  /// individual test suite after encountering an error in one of the suite's
+  /// test methods.</param>
   /// <param name="timeoutMilliseconds">Timeout for each test method, if any,
   /// in milliseconds.</param>
   public TestExecutor(
@@ -135,53 +137,55 @@ public class TestExecutor : ITestExecutor {
     // followed by the list of [Cleanup] methods.
     // Finally, all methods tagged with [CleanupAll].
     // ---------------------------------------------------------------------
-    var allMethods = GetMethodExecutionSequence(op);
+    var allTestCases = GetAllTestCasesForAllTestMethods(op);
     var skip = false;
     var errorEncountered = false;
     reporter.SuiteUpdate(suite, TestSuiteEvent.Started);
-    foreach (var method in allMethods) {
-      try {
-        var isCleanupMethod =
-          method.Type is TestMethodType.Cleanup or TestMethodType.CleanupAll;
-        var skipCurrentMethod = skip && !isCleanupMethod;
-        if (skipCurrentMethod) {
-          reporter.MethodUpdate(suite, method, TestMethodEvent.Skipped());
-        }
-        else {
-          reporter.MethodUpdate(suite, method, TestMethodEvent.Started());
-          await _methodExecutor.Run(method, instance, TimeoutMilliseconds);
-          reporter.MethodUpdate(suite, method, TestMethodEvent.Passed());
-        }
-      }
-      catch (Exception e) {
-        errorEncountered = true;
-        var exception = e.InnerException ?? e;
-        reporter.MethodUpdate(
-          suite, method, TestMethodEvent.Failed(exception)
-        );
-        if (Sequential || suite.Sequential) { skip = true; }
-
-        // Run every error handling method on the suite when an error is
-        // encountered.
-        foreach (var failureMethod in suite.FailureMethods) {
-          try {
+    foreach (var testCase in allTestCases) {
+      foreach (var method in testCase.ExecutionSequence) {
+        try {
+          var isCleanupMethod =
+            method.Type is TestMethodType.Cleanup or TestMethodType.CleanupAll;
+          var skipCurrentMethod = skip && !isCleanupMethod;
+          if (skipCurrentMethod) {
+            reporter.MethodUpdate(suite, method, TestMethodEvent.Skipped());
+          }
+          else {
             reporter.MethodUpdate(suite, method, TestMethodEvent.Started());
-            await _methodExecutor.Run(
-              failureMethod, instance, TimeoutMilliseconds
-            );
+            await _methodExecutor.Run(method, instance, TimeoutMilliseconds);
             reporter.MethodUpdate(suite, method, TestMethodEvent.Passed());
           }
-          catch (Exception failureException) {
-            failureException =
-              failureException.InnerException ?? failureException;
-            reporter.MethodUpdate(
-              suite, method, TestMethodEvent.Failed(failureException)
-            );
-          }
         }
+        catch (Exception e) {
+          errorEncountered = true;
+          var exception = e.InnerException ?? e;
+          reporter.MethodUpdate(
+            suite, method, TestMethodEvent.Failed(exception)
+          );
+          if (Sequential || suite.Sequential) { skip = true; }
 
-        if (StopOnError) {
-          throw new StoppedException(exception);
+          // Run every error handling method on the suite when an error is
+          // encountered.
+          foreach (var failureMethod in suite.FailureMethods) {
+            try {
+              reporter.MethodUpdate(suite, method, TestMethodEvent.Started());
+              await _methodExecutor.Run(
+                failureMethod, instance, TimeoutMilliseconds
+              );
+              reporter.MethodUpdate(suite, method, TestMethodEvent.Passed());
+            }
+            catch (Exception failureException) {
+              failureException =
+                failureException.InnerException ?? failureException;
+              reporter.MethodUpdate(
+                suite, method, TestMethodEvent.Failed(failureException)
+              );
+            }
+          }
+
+          if (StopOnError) {
+            throw new StoppedException(exception);
+          }
         }
       }
     }
@@ -193,29 +197,54 @@ public class TestExecutor : ITestExecutor {
       );
   }
 
-  public static IEnumerable<ITestMethod> GetMethodExecutionSequence(TestOp op) {
-    var methods =
-        // Differentiate between the different types of test operations.
-        // For test suite operations, we want to run all the test methods in
-        // the suite. Otherwise, if it's an individual test operation, we just
-        // need to run the single test method (along with any setup/cleanup
-        // methods).
+  public static IEnumerable<TestCase> GetAllTestCasesForAllTestMethods(TestOp op) {
+    var testCases = new List<TestCase>();
+
+    var testMethods =
+    // Differentiate between the different types of test operations.
+    // For test suite operations, we want to run all the test methods in
+    // the suite. Otherwise, if it's an individual test operation, we just
+    // need to run the single test method (along with any setup/cleanup
+    // methods).
         op switch {
           IndividualTestOp individualOp => [individualOp.Method],
           TestSuiteOp suiteOp => suiteOp.Suite.TestMethods,
           _ => [] // never happens
         };
 
-    if (methods.Count == 0) {
-      return [];
+    if (testMethods.Count == 0) {
+      return testCases;
     }
 
-    return op.Suite.SetupAllMethods.Concat(methods.SelectMany(
-        testMethod =>
-          op.Suite
-            .SetupMethods.Append(testMethod)
-            .Concat(op.Suite.CleanupMethods)
-      )
-    ).Concat(op.Suite.CleanupAllMethods);
+    foreach (var testMethod in testMethods) {
+      if (testMethod.InlineDataAttributes.Count != 0) {
+        foreach (var inlineData in testMethod.InlineDataAttributes) {
+          testCases.Add(new(
+            GetTestCaseExecutionSequence(op, testMethod),
+            inlineData.Data));
+        }
+      }
+      else if (testMethod.MemberDataAttributes.Count != 0) {
+        foreach (var memberData in testMethod.MemberDataAttributes) {
+          testCases.Add(new(
+            GetTestCaseExecutionSequence(op, testMethod),
+            memberData.Data));
+        }
+      }
+      else {
+        testCases.Add(new(
+          GetTestCaseExecutionSequence(op, testMethod),
+          []));
+      }
+    }
+
+    return testCases;
   }
+
+  private static IEnumerable<ITestMethod> GetTestCaseExecutionSequence(TestOp op, ITestMethod testMethod)
+    => op.Suite.SetupAllMethods.Concat(
+      op.Suite.SetupMethods
+        .Append(testMethod)
+        .Concat(op.Suite.CleanupMethods)
+    ).Concat(op.Suite.CleanupAllMethods);
 }

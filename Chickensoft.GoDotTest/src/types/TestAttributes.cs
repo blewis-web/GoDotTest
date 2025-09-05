@@ -1,10 +1,7 @@
 namespace Chickensoft.GoDotTest;
 
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 [AttributeUsage(AttributeTargets.All, AllowMultiple = false), MeansImplicitUse]
@@ -36,92 +33,46 @@ public class TestAttribute : TestRunnerMethodAttribute {
   public TestAttribute([CallerLineNumber] int line = 0) : base(line) { }
 }
 
-// Many things in this draft of ideas were copied verbatim from xUnit and plopped right into GoDotTest,
-// but we should probably remove anything unused and resolve style issues prior to adding a new feature.
-// An advantage of using slimmed down xUnit implementations is
-// that it would be easier for new parameterized test features to be added over time that are already in xUnit. We could
-// start with just the most requested features, and then add less used ones over time until there is feature parity with
-// xUnit parameterized tests.
-//
 // My team is interested in contributing the following features (but probably not more than that):
 // 1. InlineDataAttribute
 // 2. MemberDataAttribute with Static Methods that return IEnumerable<object?[]>
 // 3. MemberData with Static Methods that return TheoryData (strongly typed)
 
 /// <summary>
-/// Attribute used to mark a method as a theory.
-/// This attribute is roughly designed after <see href="https://github.com/xunit/xunit/blob/main/src/xunit.v3.core/TheoryAttribute.cs"/> but is not at feature parity.
-/// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class TheoryAttribute : TestRunnerMethodAttribute {
-  /// <summary>
-  /// Creates a new TheoryAttribute with the specified line number.
-  /// </summary>
-  /// <param name="line">Line number.</param>
-  public TheoryAttribute([CallerLineNumber] int line = 0) : base(line) { }
-}
-
-/// <summary>
-/// Base interface that all data attributes (that is, data providers for theories) are
-/// expected to implement. Data attributes are valid on methods only.
-/// </summary>
-public interface IDataAttribute {
-  /// <summary>
-  /// Returns the data to be used to test the theory.
-  /// </summary>
-  /// <param name="testMethod">The test method the data attribute is attached to</param>
-  ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod);
-}
-
-/// <summary>
-/// Attribute used to mark a method as a theory.
-/// This attribute is roughly designed after <see href="https://github.com/xunit/xunit/blob/main/src/xunit.v3.core/Attributes/DataAttribute.cs"/> but is not at feature parity.
-/// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-public abstract class DataAttribute : Attribute, IDataAttribute {
-  /// <inheritdoc/>
-  public abstract ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod);
-}
-
-/// <summary>
-/// Attribute used to add inline test case data for a theory.
-/// This attribute is roughly designed after <see href="https://github.com/xunit/xunit/blob/main/src/xunit.v3.core/InlineDataAttribute.cs"/> but is not at feature parity.
+/// Attribute used to add inline data for a test case.
+/// See <see href="https://github.com/xunit/xunit/blob/main/src/xunit.v3.core/InlineDataAttribute.cs"/> and
+/// <see href="https://github.com/MikeSchulze/gdUnit4Net/blob/master/Api/src/core/attributes/TestCaseAttribute.cs"/>
+/// for reference, but customize the solution to keep GoDotTest as light as possible.
 /// </summary>
 /// <param name="data">The data values to pass to the theory.</param>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class InlineDataAttribute(params object?[]? data) : DataAttribute {
+public sealed class InlineDataAttribute(params object?[]? data) : Attribute {
   /// <summary>
   /// Gets the data to be passed to the test.
   /// </summary>
   // If the user passes null to the constructor, we assume what they meant was a
   // single null value to be passed to the test.
   public object?[] Data { get; } = data ?? [null];
-
-  public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod) => throw new NotImplementedException();
 }
 
 /// <summary>
-/// Attribute used to add test case data to a test from a public static method (with parameters).
-/// This attribute is roughly designed after <see href="https://github.com/xunit/xunit/blob/main/src/xunit.v3.core/MemberDataAttribute.cs"/> but is not at feature parity.
+/// Attribute used to add test case data to a test method from a public static method (with parameters).
+/// See <see href="https://github.com/xunit/xunit/blob/main/src/xunit.v3.core/MemberDataAttribute.cs"/> and
+/// <see href="https://github.com/MikeSchulze/gdUnit4Net/blob/master/Api/src/core/attributes/DataPointAttribute.cs"/>
+/// for reference, but customize the solution to keep GoDotTest as light as possible.
 /// </summary>
 /// <param name="memberName">
 /// The name of the public static member on the test class that will provide the test data
 /// It is recommended to use the <c>nameof</c> operator to ensure compile-time safety, e.g., <c>nameof(SomeMemberName)</c>.
 /// </param>
-/// <param name="arguments">The arguments to be passed to the member (only supported for methods; ignored for everything else)</param>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class MemberDataAttribute(string memberName, params object?[] arguments) : DataAttribute {
+public sealed class MemberDataAttribute(string memberName/* Arguments can be added later on: , params object?[] arguments*/) : Attribute {
   /// <summary>
   /// Gets the member name.
   /// </summary>
   public string MemberName { get; } = memberName;
 
-  /// <summary>
-  /// Gets or sets the arguments passed to the member. Only supported for static methods.
-  /// </summary>
-  public object?[] Arguments { get; } = arguments;
-
-  public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod) => throw new NotImplementedException();
+  public object?[] Data => throw new NotImplementedException();
 }
 
 /// <summary>

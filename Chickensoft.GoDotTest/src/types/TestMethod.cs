@@ -78,8 +78,18 @@ public interface ITestMethod {
   /// </summary>
   int? TimeoutMilliseconds { get; }
 
+  /// <summary>
+  /// The InlineDataAttributes for the method.
+  /// </summary>
+  List<InlineDataAttribute> InlineDataAttributes { get; }
+
+  /// <summary>
+  /// The MemberDataAttributes for the method.
+  /// </summary>
+  List<MemberDataAttribute> MemberDataAttributes { get; }
+
   /// <summary>Invokes the test method.</summary>
-  /// <param name="testInstance"></param>
+  /// <param name="testInstance">The type of test method.</param>
   /// <returns>A future that completes when the method finishes.</returns>
   Task Invoke(TestClass testInstance);
 
@@ -103,12 +113,16 @@ public class TestMethod : ITestMethod {
   public TestMethodType Type { get; }
   /// <inheritdoc/>
   public int? TimeoutMilliseconds { get; }
+  /// <inheritdoc/>
+  public List<InlineDataAttribute> InlineDataAttributes { get; } = [];
+  /// <inheritdoc/>
+  public List<MemberDataAttribute> MemberDataAttributes { get; } = [];
 
   /// <summary>
   /// Creates a new test method representation.
   /// </summary>
   /// <param name="testMethod">Method info of the test method.</param>
-  /// <param name="type"></param>
+  /// <param name="type">The type of test method.</param>
   public TestMethod(MethodInfo testMethod, TestMethodType type) {
     _testMethod = testMethod;
     Name = testMethod.Name;
@@ -121,6 +135,8 @@ public class TestMethod : ITestMethod {
       TimeoutMilliseconds = customTimeout.TimeoutMilliseconds;
     }
     Type = type;
+    InlineDataAttributes = [.. _testMethod.GetCustomAttributes<InlineDataAttribute>()];
+    MemberDataAttributes = [.. _testMethod.GetCustomAttributes<MemberDataAttribute>()];
   }
 
   /// <inheritdoc/>

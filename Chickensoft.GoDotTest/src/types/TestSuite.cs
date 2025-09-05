@@ -63,6 +63,8 @@ public class TestSuite : ITestSuite {
   /// <inheritdoc/>
   public bool Sequential { get; }
 
+  public List<ITestMethod> TheoryMethods => throw new NotImplementedException();
+
   /// <summary>
   /// Creates a new test suite (test class) representation.
   /// </summary>

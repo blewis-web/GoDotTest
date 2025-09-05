@@ -10,7 +10,7 @@ using Shouldly;
 public class InlineDataExampleTests : TestClass {
   public InlineDataExampleTests(Node testScene) : base(testScene) { }
 
-  [Theory]
+  [Test]
   [InlineData(1, 2, 3)]
   [InlineData(-4, -6, -10)]
   [InlineData(-2, 2, 0)]
