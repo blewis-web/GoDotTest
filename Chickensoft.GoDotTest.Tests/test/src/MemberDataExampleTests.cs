@@ -8,6 +8,8 @@ using Shouldly;
 public class MemberDataExampleTests : TestClass {
   public MemberDataExampleTests(Node testScene) : base(testScene) { }
 
+  // Getting this to work would be the second PR/step.
+
   public static IEnumerable<object[]> GetUntypedTestData() => [
     [1, 2, 3],
     [-4, -6, -10],
@@ -20,24 +22,26 @@ public class MemberDataExampleTests : TestClass {
     => (a + b).ShouldBe(expected);
 
 
+  // Getting this to work would be the third PR/step.
+  //
   // public static TheoryData<int, int, int> GetStronglyTypedTestData() => new() {
   //   { 1, 2, 3 },
   //   { -4, -6, -10 },
   //   { -2, 2, 0 },
   // };
-
+  //
   // [Test]
   // [MemberData(nameof(GetStronglyTypedTestData))]
   // public void CanAddExampleWithStronglyTypedTestData(int a, int b, int expected)
-  // => (a + b).ShouldBe(expected);
+  //   => (a + b).ShouldBe(expected);
 
 
+  // Getting this to work would be the fourth PR/step.
+  //
   // public static IEnumerable<object[]> GetUntypedTestDataWithArguments(int factor)
   //   => GetUntypedTestData().ToList()
   //     .ConvertAll(dataRow => dataRow.Select(x => (object)((int)x * factor)).ToArray());
-
-  // Arguments for the static methods that provide data should probably be a
-  // separate feature / PR (maybe feature 4 in the parameterized tests series now)?
+  //
   // [Test]
   // [MemberData(nameof(GetUntypedTestDataWithArguments), 0)]
   // [MemberData(nameof(GetUntypedTestDataWithArguments), 1)]

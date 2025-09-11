@@ -3,8 +3,8 @@ namespace Chickensoft.GoDotTest;
 using System.Collections.Generic;
 
 /// <summary>
-/// Represents a single test case in a method with the TestAttribute,
-/// which can have one or more test cases.
+/// Represents a single test case in a Test (a method with the TestAttribute
+/// which can have one or more test cases).
 /// </summary>
 /// <param name="ExecutionSequence">
 /// Sequence of test methods to be executed to run a single test case.
