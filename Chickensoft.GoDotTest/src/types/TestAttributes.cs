@@ -1,8 +1,8 @@
 namespace Chickensoft.GoDotTest;
 
-using JetBrains.Annotations;
 using System;
 using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 
 [AttributeUsage(AttributeTargets.All, AllowMultiple = false), MeansImplicitUse]
 
