@@ -65,7 +65,7 @@ public sealed class MemberDataAttribute(string memberName, params object?[] argu
 
     var argumentTypes = Arguments is null ? [] : Arguments.Select(arg => arg?.GetType()).ToArray();
 
-    foreach (var t in GetTypesForMember(testClassType, includeInterfaces: true)) {
+    foreach (var t in GetTestClassTypes(testClassType, includeInterfaces: true)) {
       var methodInfoArray = t.GetRuntimeMethods()
         .Where(m => m.IsStatic
           && m.Name == MemberName
@@ -99,7 +99,7 @@ public sealed class MemberDataAttribute(string memberName, params object?[] argu
   private static bool ParameterTypesCompatible(ParameterInfo[] parameters, Type?[] argumentTypes)
     => throw new NotImplementedException();
 
-  private static IEnumerable<Type> GetTypesForMember(Type testClassType, bool includeInterfaces) {
+  private static IEnumerable<Type> GetTestClassTypes(Type testClassType, bool includeInterfaces) {
     HashSet<Type> interfaces = [];
 
     for (var t = testClassType; t is not null; t = t.BaseType) {
