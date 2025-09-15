@@ -9,7 +9,7 @@ using System.Collections.Generic;
 /// <param name="ExecutionSequence">
 /// Sequence of test methods to be executed to run a single test case.
 /// </param>
-/// <param name="DataRow">
-/// The arguments to be used in this test case for a parameterized method.
+/// <param name="RawDataRow">
+/// The untyped data to be used in this test case for a parameterized method.
 /// </param>
-public record TestCase(IEnumerable<ITestMethod> ExecutionSequence, object?[] DataRow);
+public record TestCase(IEnumerable<ITestMethod> ExecutionSequence, object?[] RawDataRow);

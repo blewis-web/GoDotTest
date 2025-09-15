@@ -137,11 +137,11 @@ public class TestExecutor : ITestExecutor {
     // followed by the list of [Cleanup] methods.
     // Finally, all methods tagged with [CleanupAll].
     // ---------------------------------------------------------------------
-    var allTestCases = GetAllTestCasesForAllTestMethods(op);
+    var testCases = GetTestCases(op);
     var skip = false;
     var errorEncountered = false;
     reporter.SuiteUpdate(suite, TestSuiteEvent.Started);
-    foreach (var testCase in allTestCases) {
+    foreach (var testCase in testCases) {
       foreach (var method in testCase.ExecutionSequence) {
         try {
           var isCleanupMethod =
@@ -197,7 +197,7 @@ public class TestExecutor : ITestExecutor {
       );
   }
 
-  public static IEnumerable<TestCase> GetAllTestCasesForAllTestMethods(TestOp op) {
+  public static IEnumerable<TestCase> GetTestCases(TestOp op) {
     var testCases = new List<TestCase>();
 
     var testMethods =
@@ -221,14 +221,14 @@ public class TestExecutor : ITestExecutor {
         foreach (var inlineData in testMethod.InlineDataAttributes) {
           testCases.Add(new(
             GetTestCaseExecutionSequence(op, testMethod),
-            inlineData.Data));
+            inlineData.GetRawData(op.Suite.TestClassType)));
         }
       }
       else if (testMethod.MemberDataAttributes.Count != 0) {
         foreach (var memberData in testMethod.MemberDataAttributes) {
           testCases.Add(new(
             GetTestCaseExecutionSequence(op, testMethod),
-            memberData.Data));
+            memberData.GetRawData(op.Suite.TestClassType)));
         }
       }
       else {

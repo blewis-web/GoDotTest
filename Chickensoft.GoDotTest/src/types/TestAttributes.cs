@@ -33,48 +33,6 @@ public class TestAttribute : TestRunnerMethodAttribute {
   public TestAttribute([CallerLineNumber] int line = 0) : base(line) { }
 }
 
-// My team is interested in contributing the following features (but probably not more than that):
-// 1. InlineDataAttribute
-// 2. MemberDataAttribute with Static Methods that return IEnumerable<object?[]>
-// 3. MemberData with Static Methods that return TheoryData (strongly typed)
-
-/// <summary>
-/// Attribute used to add inline data for a test case.
-/// See <see href="https://github.com/xunit/xunit/blob/main/src/xunit.v3.core/InlineDataAttribute.cs"/> and
-/// <see href="https://github.com/MikeSchulze/gdUnit4Net/blob/master/Api/src/core/attributes/TestCaseAttribute.cs"/>
-/// for reference, but customize the solution to keep GoDotTest as light as possible.
-/// </summary>
-/// <param name="data">The data values to pass to the theory.</param>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class InlineDataAttribute(params object?[]? data) : Attribute {
-  /// <summary>
-  /// Gets the data to be passed to the test.
-  /// </summary>
-  // If the user passes null to the constructor, we assume what they meant was a
-  // single null value to be passed to the test.
-  public object?[] Data { get; } = data ?? [null];
-}
-
-/// <summary>
-/// Attribute used to add test case data to a test method from a public static method (with parameters).
-/// See <see href="https://github.com/xunit/xunit/blob/main/src/xunit.v3.core/MemberDataAttribute.cs"/> and
-/// <see href="https://github.com/MikeSchulze/gdUnit4Net/blob/master/Api/src/core/attributes/DataPointAttribute.cs"/>
-/// for reference, but customize the solution to keep GoDotTest as light as possible.
-/// </summary>
-/// <param name="memberName">
-/// The name of the public static member on the test class that will provide the test data
-/// It is recommended to use the <c>nameof</c> operator to ensure compile-time safety, e.g., <c>nameof(SomeMemberName)</c>.
-/// </param>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class MemberDataAttribute(string memberName/* Arguments can be added later on: , params object?[] arguments*/) : Attribute {
-  /// <summary>
-  /// Gets the member name.
-  /// </summary>
-  public string MemberName { get; } = memberName;
-
-  public object?[] Data => throw new NotImplementedException();
-}
-
 /// <summary>
 /// Attribute used to mark a setup method to be called once before all the
 /// tests run.
